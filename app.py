@@ -21,14 +21,15 @@ import sys
 
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QFileDialog, QLabel, QWidget,
-    QVBoxLayout, QHBoxLayout, QPushButton, QScrollArea, QSizePolicy
+    QVBoxLayout, QHBoxLayout, QPushButton, QScrollArea
 )
 from PySide6.QtGui import QPixmap, QPainter, QPen, QColor, QFont
 from PySide6.QtCore import Qt, QRect, QPoint, QSize
 
-# --- Configuration ---
+
 # DPI for the preview image. Higher values are clearer but use more memory.
 PREVIEW_DPI = 150
+
 
 class PDFViewerLabel(QLabel):
     """
@@ -62,6 +63,8 @@ class PDFViewerLabel(QLabel):
 
     def paintEvent(self, event):
         super().paintEvent(event) # Draw the pixmap first
+
+        # Draw the selection box if available (both during dragging and after).
         if not self.selection_rect.isNull():
             painter = QPainter(self)
             pen = QPen(QColor(0, 120, 215, 200), 2, Qt.SolidLine)
@@ -70,6 +73,7 @@ class PDFViewerLabel(QLabel):
             fill_color = QColor(0, 120, 215, 50)
             painter.fillRect(self.selection_rect, fill_color)
             painter.drawRect(self.selection_rect)
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -173,11 +177,11 @@ class MainWindow(QMainWindow):
                     self.total_pages = int(line.split(":")[1].strip())
             return True
         except FileNotFoundError:
-            self.display_error("Error: pdfinfo command not found.")
+            self.display_error("Error: `pdfinfo` command not found.")
             return False
         except subprocess.CalledProcessError as e:
             self.display_error(f"Failed to get PDF info.\n"
-                               f"PDF may be corrupt or encrypted.\n\n"
+                               f"PDF may be corrupted or encrypted.\n\n"
                                f"Poppler Error:\n{e.stderr}")
             return False
 
@@ -196,6 +200,7 @@ class MainWindow(QMainWindow):
             if result.stderr:
                 print(f'pdfinfo warnings: {result.stderr}', file=sys.stderr)
             for line in result.stdout.splitlines():
+                # Line format: "Page (page number) size: (width) x (height) pts"
                 match = re.match(r'Page\s+\d+\s+size:\s+([\d\.]+)\s+x\s+([\d\.]+)\s+', line)
                 if match:
                     width = float(match.group(1))
