@@ -81,6 +81,13 @@ jobs:
       - name: Install Python deps for lint checks
         run: python -m pip install -r requirements-lint.txt
 
+      - name: Install missing packages to help Pylint check PySide6 imports properly
+        # https://github.com/pylint-dev/pylint/issues/3729#issuecomment-1398167133 did not solve the issue.
+        # Now trying with packages listed in https://github.com/pylint-dev/pylint/issues/3729#issuecomment-2779318606
+        run: |
+          sudo apt update 
+          sudo apt install -y libgl1 libegl1
+
       - name: Run Pylint checks
         run: python -m pylint $(git ls-files '*.py')
         # Mark this check optional for now, in case it starts out failing.
