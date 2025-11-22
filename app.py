@@ -114,7 +114,7 @@ class MainWindow(QMainWindow):
         self.scroll_area = QScrollArea()
         # Allow the widget to be larger than the viewport, enabling scrolling.
         self.scroll_area.setWidgetResizable(False)
-        # A dark background makes the page stand out. Using a stylesheet is a modern way to do this.
+        # A dark background makes the page stand out, using a stylesheet.
         self.scroll_area.setStyleSheet("background-color: #3c3c3c;")
 
         # Custom label for viewing and selection
@@ -152,8 +152,9 @@ class MainWindow(QMainWindow):
             subprocess.run(["pdftoppm", "-v"], check=True, capture_output=True)
             subprocess.run(["pdfinfo", "-v"], check=True, capture_output=True)
         except (subprocess.CalledProcessError, FileNotFoundError):
-            self.display_error("Error: Poppler tools not found.\n"
-                               "Please install 'poppler-utils' and ensure it's in your system's PATH.")
+            self.display_error(
+                "Error: Poppler tools not found.\n"
+                "Please install 'poppler-utils' and ensure it's in your PATH.")
             for btn in [self.btn_open, self.btn_save, self.btn_prev, self.btn_next]:
                 btn.setEnabled(False)
 
@@ -168,9 +169,13 @@ class MainWindow(QMainWindow):
     def get_pdf_info(self):
         """Gets total pages using pdfinfo and returns True on success."""
         try:
+            command = [
+                "pdfinfo",
+                self.pdf_path,
+            ]
             result = subprocess.run(
-                ["pdfinfo", self.pdf_path],
-                capture_output=True, text=True, check=True, encoding='utf-8', errors='ignore'
+                command, capture_output=True, text=True, check=True, encoding='utf-8',
+                errors='ignore',
             )
             for line in result.stdout.splitlines():
                 if "Pages:" in line:
@@ -195,7 +200,8 @@ class MainWindow(QMainWindow):
                 self.pdf_path
             ]
             result = subprocess.run(
-                command, capture_output=True, text=True, check=True, encoding='utf-8', errors='ignore'
+                command, capture_output=True, text=True, check=True, encoding='utf-8',
+                errors='ignore',
             )
             if result.stderr:
                 print(f'pdfinfo warnings: {result.stderr}', file=sys.stderr)
@@ -246,7 +252,7 @@ class MainWindow(QMainWindow):
                 self.viewer.setPixmap(pixmap)
                 self.viewer.adjustSize() # Resize the label to fit the pixmap
             else:
-                raise FileNotFoundError(f"pdftoppm did not create the expected file: {generated_file}")
+                raise FileNotFoundError(f"pdftoppm did not create expected file: {generated_file}")
 
             self.update_ui_state()
 
@@ -327,7 +333,8 @@ class MainWindow(QMainWindow):
                 output_path,
             ]
             result = subprocess.run(
-                command, check=True, capture_output=True, text=True, encoding='utf-8', errors='ignore'
+                command, check=True, capture_output=True, text=True, encoding='utf-8',
+                errors='ignore',
             )
 
             # Check stderr for warnings even if the command succeeds
