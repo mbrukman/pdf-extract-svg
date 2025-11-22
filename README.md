@@ -10,6 +10,45 @@ raster image such as JPG, PNG, WebP, AVIF, or similar, which unfortunately
 become pixelated when zooming in or scaling them larger to examine fine-grained
 details.
 
+## Installation
+
+* Install CLI tools for querying and managing PDFs
+
+  The script uses `pdftocairo`, `pdftoppm`, and `pdfinfo`.
+
+  ```sh
+  sudo apt install poppler-utils
+  ```
+
+* Create a Python virtual environment and install necessary Python packages
+
+  ```sh
+  # Create a new virtual environment
+  python -m venv venv
+
+  # Activate the new environment
+  source venv/bin/activate
+
+  # Install necessary Python packages
+  python -m pip install -r requirements.txt
+  ```
+
+## Run the program
+
+Start the program via either:
+
+```sh
+# Implicitly uses /usr/bin/python
+./app.py
+```
+
+or
+
+```sh
+# Use the first `python` binary in your $PATH, or manually choose another one
+python app.py
+```
+
 ## Contributing
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for details.

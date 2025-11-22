@@ -1,0 +1,7 @@
+# Temporary editor files
+*.sw?
+*~
+
+# Python virtual environment and generated files
+venv
+__pycache__
