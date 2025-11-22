@@ -1,0 +1,11 @@
+[MAIN]
+
+# Ignore PySide6 package and its imports, as Pylint doesn't handle C
+# extensions.
+#
+# References:
+#
+# * https://stackoverflow.com/a/77952821
+# * https://stackoverflow.com/a/56728368
+# * https://github.com/pylint-dev/pylint/issues/5378
+extension-pkg-allow-list=PySide6

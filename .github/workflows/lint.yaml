@@ -23,6 +23,7 @@ on:
       - main
     paths:
         # Python configs
+      - '**/.pylintrc'
       - '**/requirements*.txt'
         # Python files
       - '**/*.py'
@@ -34,6 +35,7 @@ on:
       - main
     paths:
         # Python configs
+      - '**/.pylintrc'
       - '**/requirements*.txt'
         # Python files
       - '**/*.py'
