@@ -1,5 +1,13 @@
 # Extract vectors from PDF to SVG
 
+[![Lint][pdf-extract-svg-lint-badge]][pdf-extract-svg-lint-url]
+[![Typecheck][pdf-extract-svg-typecheck-badge]][pdf-extract-svg-typecheck-url]
+
+[pdf-extract-svg-lint-badge]: https://github.com/mbrukman/pdf-extract-svg/actions/workflows/lint.yaml/badge.svg?branch=main
+[pdf-extract-svg-lint-url]: https://github.com/mbrukman/pdf-extract-svg/actions/workflows/lint.yaml?query=branch%3Amain
+[pdf-extract-svg-typecheck-badge]: https://github.com/mbrukman/pdf-extract-svg/actions/workflows/typecheck.yaml/badge.svg?branch=main
+[pdf-extract-svg-typecheck-url]: https://github.com/mbrukman/pdf-extract-svg/actions/workflows/typecheck.yaml?query=branch%3Amain
+
 This app enables extracting regions in a PDF file, such as a diagram, or chart,
 or an algorithm, using the vector data in the PDF into an SVG file, which scales
 losslessly.
