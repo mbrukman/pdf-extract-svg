@@ -333,7 +333,7 @@ class MainWindow(QMainWindow):
             # Check stderr for warnings even if the command succeeds
             if result.stderr:
                 print(f"pdftocairo warnings:\n{result.stderr}", file=sys.stderr)
-                self.statusBar().showMessage(f"Saved with warnings. See console for details.", 5000)
+                self.statusBar().showMessage("Saved with warnings. See console for details.", 5000)
             else:
                 self.statusBar().showMessage(f"Successfully saved to {output_path}", 5000)
 
@@ -342,7 +342,7 @@ class MainWindow(QMainWindow):
             print(f"Error saving SVG: {e.stderr.strip()}", file=sys.stderr)
             self.statusBar().showMessage(f"Error saving SVG: {e.stderr.strip()}", 10000)
         except FileNotFoundError:
-            self.statusBar().showMessage(f"Error: 'pdftocairo' command not found.", 5000)
+            self.statusBar().showMessage("Error: 'pdftocairo' command not found.", 5000)
 
     def cleanup_temp_files(self):
         """Clean up any temporary image files."""
