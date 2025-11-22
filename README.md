@@ -17,7 +17,11 @@ details.
   The script uses `pdftocairo`, `pdftoppm`, and `pdfinfo`.
 
   ```sh
+  # Debian, Ubuntu, etc.
   sudo apt install poppler-utils
+
+  # RedHat, Fedora, CentOS, etc.
+  sudo dnf install poppler-utils
   ```
 
 * Create a Python virtual environment and install necessary Python packages
