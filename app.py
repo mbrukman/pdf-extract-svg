@@ -14,9 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 import os
+import re
 import subprocess
+import sys
+
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QFileDialog, QLabel, QWidget,
     QVBoxLayout, QHBoxLayout, QPushButton, QScrollArea, QSizePolicy
@@ -60,7 +62,7 @@ class PDFViewerLabel(QLabel):
 
     def paintEvent(self, event):
         super().paintEvent(event) # Draw the pixmap first
-        if not self.selection_rect.isNull() and self.is_selecting:
+        if not self.selection_rect.isNull():
             painter = QPainter(self)
             pen = QPen(QColor(0, 120, 215, 200), 2, Qt.SolidLine)
             painter.setPen(pen)
@@ -183,20 +185,28 @@ class MainWindow(QMainWindow):
     def update_page_size(self):
         """Updates the size in points for the current page."""
         try:
+            command = [
+                "pdfinfo",
+                "-f", str(self.current_page + 1),
+                "-l", str(self.current_page + 1),
+                self.pdf_path
+            ]
             result = subprocess.run(
-                ["pdfinfo", "-f", str(self.current_page + 1), "-l", str(self.current_page + 1), self.pdf_path],
-                capture_output=True, text=True, check=True, encoding='utf-8', errors='ignore'
+                command, capture_output=True, text=True, check=True, encoding='utf-8', errors='ignore'
             )
+            if result.stderr:
+                print(f'pdfinfo warnings: {result.stderr}', file=sys.stderr)
             for line in result.stdout.splitlines():
-                if "Page size:" in line:
+                match = re.match(r'Page\s+\d+\s+size:\s+([\d\.]+)\s+x\s+([\d\.]+)\s+', line)
+                if match:
                     parts = line.split(":")[1].strip().split("x")
-                    width = float(parts[0].strip())
-                    height = float(parts[1].split(" ")[0].strip())
+                    width = float(match.group(1))
+                    height = float(match.group(2))
                     self.page_size_points = (width, height)
                     return
             self.page_size_points = (0, 0)
         except (subprocess.CalledProcessError, FileNotFoundError, IndexError) as e:
-            print(f"Could not get page size for page {self.current_page + 1}: {e}")
+            print(f"Could not get page size for page {self.current_page + 1}: {e}", file=sys.stderr)
             self.page_size_points = (0, 0)
 
     def render_page(self):
@@ -211,15 +221,20 @@ class MainWindow(QMainWindow):
 
         try:
             # Use pdftoppm to render the current page to a PNG
-            subprocess.run([
+            command = [
                 "pdftoppm",
                 "-f", str(self.current_page + 1),
                 "-l", str(self.current_page + 1),
                 "-png",
                 "-r", str(PREVIEW_DPI),
+                "-singlefile",
                 self.pdf_path,
-                temp_image_path # pdftoppm appends ".png"
-            ], check=True, capture_output=True)
+                temp_image_path, # pdftoppm appends ".png"
+            ]
+            result = subprocess.run(command, check=True, capture_output=True)
+
+            if result.stderr:
+                print(f"pdftoppm warnings:\n{result.stderr}", file=sys.stderr)
 
             generated_file = temp_image_path + ".png"
             if os.path.exists(generated_file):
@@ -299,25 +314,29 @@ class MainWindow(QMainWindow):
                 "-svg",
                 "-f", str(self.current_page + 1),
                 "-l", str(self.current_page + 1),
-                "-x", f"{x_pt:.4f}",
-                "-y", f"{y_pt:.4f}",
-                "-W", f"{w_pt:.4f}",
-                "-H", f"{h_pt:.4f}",
+                "-x", f'{int(x_pt)}', # Needs to be integer valued!
+                "-y", f'{int(y_pt)}', # Needs to be integer valued!
+                "-W", f'{int(w_pt)}', # Needs to be integer valued!
+                "-H", f'{int(h_pt)}', # Needs to be integer valued!
+                "-nocenter",
+                "-noshrink",
                 self.pdf_path,
-                output_path
+                output_path,
             ]
-
-            result = subprocess.run(command, check=True, capture_output=True, text=True, encoding='utf-8', errors='ignore')
+            result = subprocess.run(
+                command, check=True, capture_output=True, text=True, encoding='utf-8', errors='ignore'
+            )
 
             # Check stderr for warnings even if the command succeeds
             if result.stderr:
-                print(f"pdftocairo warnings:\n{result.stderr}")
+                print(f"pdftocairo warnings:\n{result.stderr}", file=sys.stderr)
                 self.statusBar().showMessage(f"Saved with warnings. See console for details.", 5000)
             else:
                 self.statusBar().showMessage(f"Successfully saved to {output_path}", 5000)
 
         except subprocess.CalledProcessError as e:
             # The error you are seeing will be caught here
+            print(f"Error saving SVG: {e.stderr.strip()}", file=sys.stderr)
             self.statusBar().showMessage(f"Error saving SVG: {e.stderr.strip()}", 10000)
         except FileNotFoundError:
             self.statusBar().showMessage(f"Error: 'pdftocairo' command not found.", 5000)
@@ -329,7 +348,7 @@ class MainWindow(QMainWindow):
                 try:
                     os.remove(f)
                 except OSError as e:
-                    print(f"Error removing temp file {f}: {e}")
+                    print(f"Error removing temp file {f}: {e}", file=sys.stderr)
 
     def closeEvent(self, event):
         """Clean up temporary files on exit."""
