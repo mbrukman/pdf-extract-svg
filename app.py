@@ -108,15 +108,14 @@ class MainWindow(QMainWindow):
 
         # Scrollable area for the PDF viewer
         self.scroll_area = QScrollArea()
-        self.scroll_area.setWidgetResizable(True)
-
+        # Allow the widget to be larger than the viewport, enabling scrolling.
+        self.scroll_area.setWidgetResizable(False)
         # A dark background makes the page stand out. Using a stylesheet is a modern way to do this.
         self.scroll_area.setStyleSheet("background-color: #3c3c3c;")
 
         # Custom label for viewing and selection
         self.viewer = PDFViewerLabel()
         self.viewer.setAlignment(Qt.AlignCenter)
-        self.viewer.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.scroll_area.setWidget(self.viewer)
 
         main_layout.addLayout(control_layout)
@@ -199,7 +198,6 @@ class MainWindow(QMainWindow):
             for line in result.stdout.splitlines():
                 match = re.match(r'Page\s+\d+\s+size:\s+([\d\.]+)\s+x\s+([\d\.]+)\s+', line)
                 if match:
-                    parts = line.split(":")[1].strip().split("x")
                     width = float(match.group(1))
                     height = float(match.group(2))
                     self.page_size_points = (width, height)
@@ -241,7 +239,7 @@ class MainWindow(QMainWindow):
                 pixmap = QPixmap(generated_file)
                 self.viewer.setStyleSheet("") # Reset stylesheet
                 self.viewer.setPixmap(pixmap)
-                self.viewer.adjustSize()
+                self.viewer.adjustSize() # Resize the label to fit the pixmap
             else:
                 raise FileNotFoundError(f"pdftoppm did not create the expected file: {generated_file}")
 
@@ -249,7 +247,7 @@ class MainWindow(QMainWindow):
 
         except subprocess.CalledProcessError as e:
             self.display_error(f"Failed to render page {self.current_page + 1}.\n\n"
-                               f"Poppler Error:\n{e.stderr}")
+                               f"Poppler Error:\n{e.stderr.decode('utf-8', 'ignore')}")
         except (FileNotFoundError) as e:
             self.display_error(f"Failed to render page {self.current_page + 1}.\nError: {e}")
         finally:
