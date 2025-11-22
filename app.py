@@ -45,6 +45,7 @@ class PDFViewerLabel(QLabel):
             self.start_point = event.pos()
             self.selection_rect = QRect(self.start_point, QSize())
             self.is_selecting = True
+            self.update()
 
     def mouseMoveEvent(self, event):
         if self.is_selecting:
@@ -76,7 +77,7 @@ class MainWindow(QMainWindow):
 
         # Member variables
         self.pdf_path = None
-        self.temp_image_path = "temp_page.png"
+        self.temp_image_base = "pdf_extractor_temp_page"
         self.current_page = 0
         self.total_pages = 0
         self.page_size_points = (0, 0) # Store page size in points (w, h)
@@ -106,6 +107,7 @@ class MainWindow(QMainWindow):
         # Scrollable area for the PDF viewer
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
+
         # A dark background makes the page stand out. Using a stylesheet is a modern way to do this.
         self.scroll_area.setStyleSheet("background-color: #3c3c3c;")
 
@@ -130,6 +132,13 @@ class MainWindow(QMainWindow):
 
         self.check_poppler_tools()
 
+    def display_error(self, message):
+        """Helper to display error messages in the viewer."""
+        self.viewer.clear()
+        self.viewer.setText(message)
+        self.viewer.setFont(QFont("Arial", 12))
+        self.viewer.setStyleSheet("color: red;")
+
     def check_poppler_tools(self):
         """Checks if Poppler command-line tools are accessible."""
         try:
@@ -138,10 +147,8 @@ class MainWindow(QMainWindow):
             subprocess.run(["pdftoppm", "-v"], check=True, capture_output=True)
             subprocess.run(["pdfinfo", "-v"], check=True, capture_output=True)
         except (subprocess.CalledProcessError, FileNotFoundError):
-            self.viewer.setText("Error: Poppler tools not found.\n"
-                                "Please install 'poppler-utils' and ensure it's in your system's PATH.")
-            self.viewer.setFont(QFont("Arial", 14))
-            self.viewer.setStyleSheet("color: red;")
+            self.display_error("Error: Poppler tools not found.\n"
+                               "Please install 'poppler-utils' and ensure it's in your system's PATH.")
             for btn in [self.btn_open, self.btn_save, self.btn_prev, self.btn_next]:
                 btn.setEnabled(False)
 
@@ -149,31 +156,36 @@ class MainWindow(QMainWindow):
         path, _ = QFileDialog.getOpenFileName(self, "Open PDF", "", "PDF Files (*.pdf)")
         if path:
             self.pdf_path = path
-            self.get_pdf_info()
             self.current_page = 0
-            self.render_page()
+            if self.get_pdf_info():
+                self.render_page()
 
     def get_pdf_info(self):
-        """Gets total pages and page dimensions using pdfinfo."""
+        """Gets total pages using pdfinfo and returns True on success."""
         try:
-            # Get total pages
-            result = subprocess.run(["pdfinfo", self.pdf_path], capture_output=True, text=True, check=True)
+            result = subprocess.run(
+                ["pdfinfo", self.pdf_path],
+                capture_output=True, text=True, check=True, encoding='utf-8', errors='ignore'
+            )
             for line in result.stdout.splitlines():
                 if "Pages:" in line:
                     self.total_pages = int(line.split(":")[1].strip())
-
-            # Get first page dimensions
-            self.update_page_size()
-        except (subprocess.CalledProcessError, FileNotFoundError) as e:
-            print(f"Error getting PDF info: {e}")
-            self.total_pages = 0
+            return True
+        except FileNotFoundError:
+            self.display_error("Error: pdfinfo command not found.")
+            return False
+        except subprocess.CalledProcessError as e:
+            self.display_error(f"Failed to get PDF info.\n"
+                               f"PDF may be corrupt or encrypted.\n\n"
+                               f"Poppler Error:\n{e.stderr}")
+            return False
 
     def update_page_size(self):
         """Updates the size in points for the current page."""
         try:
             result = subprocess.run(
                 ["pdfinfo", "-f", str(self.current_page + 1), "-l", str(self.current_page + 1), self.pdf_path],
-                capture_output=True, text=True, check=True
+                capture_output=True, text=True, check=True, encoding='utf-8', errors='ignore'
             )
             for line in result.stdout.splitlines():
                 if "Page size:" in line:
@@ -181,9 +193,10 @@ class MainWindow(QMainWindow):
                     width = float(parts[0].strip())
                     height = float(parts[1].split(" ")[0].strip())
                     self.page_size_points = (width, height)
-                    break
-        except Exception as e:
-            print(f"Could not get page size: {e}")
+                    return
+            self.page_size_points = (0, 0)
+        except (subprocess.CalledProcessError, FileNotFoundError, IndexError) as e:
+            print(f"Could not get page size for page {self.current_page + 1}: {e}")
             self.page_size_points = (0, 0)
 
     def render_page(self):
@@ -191,9 +204,13 @@ class MainWindow(QMainWindow):
             return
 
         self.update_page_size()
+        temp_image_path = f"{self.temp_image_base}-{self.current_page + 1}"
 
-        # Use pdftoppm to render the current page to a PNG
+        # Clean up old temp files before creating a new one
+        self.cleanup_temp_files()
+
         try:
+            # Use pdftoppm to render the current page to a PNG
             subprocess.run([
                 "pdftoppm",
                 "-f", str(self.current_page + 1),
@@ -201,25 +218,29 @@ class MainWindow(QMainWindow):
                 "-png",
                 "-r", str(PREVIEW_DPI),
                 self.pdf_path,
-                self.temp_image_path.replace(".png", "") # pdftoppm appends suffix
-            ], check=True)
+                temp_image_path # pdftoppm appends ".png"
+            ], check=True, capture_output=True)
 
-            # The output file is named like 'temp_page-1.png'
-            generated_file = f"{self.temp_image_path.replace('.png', '')}-{self.current_page + 1}.png"
-            if not os.path.exists(generated_file):
-                # some versions of poppler might not append the page number if only one page is rendered
-                generated_file = f"{self.temp_image_path.replace('.png', '')}.png"
-
-
-            pixmap = QPixmap(generated_file)
-            self.viewer.setPixmap(pixmap)
-            self.viewer.adjustSize()
-            os.remove(generated_file) # Clean up the temp file
+            generated_file = temp_image_path + ".png"
+            if os.path.exists(generated_file):
+                pixmap = QPixmap(generated_file)
+                self.viewer.setStyleSheet("") # Reset stylesheet
+                self.viewer.setPixmap(pixmap)
+                self.viewer.adjustSize()
+            else:
+                raise FileNotFoundError(f"pdftoppm did not create the expected file: {generated_file}")
 
             self.update_ui_state()
 
-        except (subprocess.CalledProcessError, FileNotFoundError) as e:
-            self.viewer.setText(f"Failed to render page {self.current_page + 1}.\nError: {e}")
+        except subprocess.CalledProcessError as e:
+            self.display_error(f"Failed to render page {self.current_page + 1}.\n\n"
+                               f"Poppler Error:\n{e.stderr}")
+        except (FileNotFoundError) as e:
+            self.display_error(f"Failed to render page {self.current_page + 1}.\nError: {e}")
+        finally:
+            # Clean up the generated PNG immediately after loading it
+            self.cleanup_temp_files()
+
 
     def update_ui_state(self):
         """Enable/disable buttons based on current state."""
@@ -240,9 +261,8 @@ class MainWindow(QMainWindow):
 
     def save_svg(self):
         selection = self.viewer.selection_rect
-        if selection.isNull() or selection.width() == 0 or selection.height() == 0:
-            # A simple way to inform user without blocking dialogs
-            self.statusBar().showMessage("Please select a region first.", 3000)
+        if selection.isNull() or selection.width() < 2 or selection.height() < 2:
+            self.statusBar().showMessage("Please select a valid region first.", 3000)
             return
 
         output_path, _ = QFileDialog.getSaveFileName(self, "Save SVG", "", "SVG Files (*.svg)")
@@ -250,9 +270,17 @@ class MainWindow(QMainWindow):
             return
 
         # --- Coordinate Conversion ---
-        # Convert pixel selection from the rendered image to PDF points
-        pixmap_size = self.viewer.pixmap().size()
+        pixmap = self.viewer.pixmap()
+        if not pixmap or pixmap.isNull():
+            self.statusBar().showMessage("Cannot save: No page rendered.", 4000)
+            return
+
+        pixmap_size = pixmap.size()
         pdf_w_pt, pdf_h_pt = self.page_size_points
+
+        if pixmap_size.width() == 0 or pixmap_size.height() == 0:
+            self.statusBar().showMessage("Cannot save: Invalid page dimensions.", 4000)
+            return
 
         # Calculate the scale factor
         scale_x = pdf_w_pt / pixmap_size.width()
@@ -266,31 +294,46 @@ class MainWindow(QMainWindow):
 
         # --- Run pdftocairo to extract the SVG ---
         try:
-            subprocess.run([
+            command = [
                 "pdftocairo",
                 "-svg",
                 "-f", str(self.current_page + 1),
                 "-l", str(self.current_page + 1),
-                "-x", str(x_pt),
-                "-y", str(y_pt),
-                "-W", str(w_pt),
-                "-H", str(h_pt),
+                "-x", f"{x_pt:.4f}",
+                "-y", f"{y_pt:.4f}",
+                "-W", f"{w_pt:.4f}",
+                "-H", f"{h_pt:.4f}",
                 self.pdf_path,
                 output_path
-            ], check=True)
-            self.statusBar().showMessage(f"Successfully saved to {output_path}", 5000)
-        except (subprocess.CalledProcessError, FileNotFoundError) as e:
-            self.statusBar().showMessage(f"Error saving SVG: {e}", 5000)
+            ]
 
-    def closeEvent(self, event):
-        """Clean up temporary files on exit."""
-        # Find any remaining temp files and remove them
+            result = subprocess.run(command, check=True, capture_output=True, text=True, encoding='utf-8', errors='ignore')
+
+            # Check stderr for warnings even if the command succeeds
+            if result.stderr:
+                print(f"pdftocairo warnings:\n{result.stderr}")
+                self.statusBar().showMessage(f"Saved with warnings. See console for details.", 5000)
+            else:
+                self.statusBar().showMessage(f"Successfully saved to {output_path}", 5000)
+
+        except subprocess.CalledProcessError as e:
+            # The error you are seeing will be caught here
+            self.statusBar().showMessage(f"Error saving SVG: {e.stderr.strip()}", 10000)
+        except FileNotFoundError:
+            self.statusBar().showMessage(f"Error: 'pdftocairo' command not found.", 5000)
+
+    def cleanup_temp_files(self):
+        """Clean up any temporary image files."""
         for f in os.listdir('.'):
-            if f.startswith(self.temp_image_path.replace(".png", "")):
+            if f.startswith(self.temp_image_base) and f.endswith(".png"):
                 try:
                     os.remove(f)
                 except OSError as e:
                     print(f"Error removing temp file {f}: {e}")
+
+    def closeEvent(self, event):
+        """Clean up temporary files on exit."""
+        self.cleanup_temp_files()
         super().closeEvent(event)
 
 
@@ -299,4 +342,3 @@ if __name__ == "__main__":
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
-
