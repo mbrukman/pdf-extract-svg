@@ -50,15 +50,17 @@ details.
 Start the program via either:
 
 ```sh
-# Implicitly uses /usr/bin/python
-./app.py
+# Use the first `python` binary in your $PATH, necessary if you're using
+# virtual environments.
+python app.py
 ```
 
-or
+or, if you've installed PySide6 globally and are not using virtual
+environments:
 
 ```sh
-# Use the first `python` binary in your $PATH, or manually choose another one
-python app.py
+# Implicitly uses /usr/bin/python
+./app.py
 ```
 
 ## Contributing
