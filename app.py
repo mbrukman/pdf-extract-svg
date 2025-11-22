@@ -43,25 +43,25 @@ class PDFViewerLabel(QLabel):
         self.end_point = QPoint()
         self.is_selecting = False
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event): # pylint: disable=invalid-name
         if event.button() == Qt.LeftButton:
             self.start_point = event.pos()
             self.selection_rect = QRect(self.start_point, QSize())
             self.is_selecting = True
             self.update()
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event): # pylint: disable=invalid-name
         if self.is_selecting:
             self.end_point = event.pos()
             self.selection_rect = QRect(self.start_point, self.end_point).normalized()
             self.update() # Trigger a repaint
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event): # pylint: disable=invalid-name
         if event.button() == Qt.LeftButton and self.is_selecting:
             self.is_selecting = False
             self.update()
 
-    def paintEvent(self, event):
+    def paintEvent(self, event): # pylint: disable=invalid-name
         super().paintEvent(event) # Draw the pixmap first
 
         # Draw the selection box if available (both during dragging and after).
@@ -360,7 +360,7 @@ class MainWindow(QMainWindow):
                 except OSError as e:
                     print(f"Error removing temp file {f}: {e}", file=sys.stderr)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event): # pylint: disable=invalid-name
         """Clean up temporary files on exit."""
         self.cleanup_temp_files()
         super().closeEvent(event)
