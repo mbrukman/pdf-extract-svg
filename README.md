@@ -35,7 +35,9 @@ pages using "<< Prev" and "Next >>" buttons.
 
 > [!NOTE]
 > There's no "jump to page number" functionality available yet; I plan to add
-> this in the future. Let me know if you need this feature sooner.
+> this in the future. If you need this feature sooner, please vote with thumbs
+> up on [this issue](https://github.com/mbrukman/pdf-extract-svg/issues/21).
+> Thanks!
 
 Now, you will see the PDF rendered on your screen as follows (this is the LeNet
 paper):
