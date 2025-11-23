@@ -24,13 +24,11 @@ details.
 
   The script uses `pdftocairo`, `pdftoppm`, and `pdfinfo`.
 
-  ```sh
-  # Debian, Ubuntu, etc.
-  sudo apt install poppler-utils
-
-  # RedHat, Fedora, CentOS, etc.
-  sudo dnf install poppler-utils
-  ```
+  * Debian, Ubuntu, etc.: `sudo apt install poppler-utils`
+  * RedHat, Fedora, CentOS, etc.: `sudo dnf install poppler-utils`
+  * Other Linux distributions: see [Repology](https://repology.org/project/poppler/versions)
+  * macOS: install [Homebrew](https://brew.sh) and `brew install poppler`
+  * Other: install [Poppler](https://poppler.freedesktop.org) from source
 
 * Create a Python virtual environment and install necessary Python packages
 
