@@ -18,6 +18,55 @@ raster image such as JPG, PNG, WebP, AVIF, or similar, which unfortunately
 become pixelated when zooming in or scaling them larger to examine fine-grained
 details.
 
+## Table of Contents
+
+* [Usage](#usage)
+* [Installation](#installation)
+* [Running](#running)
+* [Contributing](#contributing)
+* [License](#license)
+* [Disclaimer](#disclaimer)
+
+## Usage
+
+When you open the app, you will see a blank screen. Click on "Open PDF" button
+in the upper left and select a PDF. Once the PDF is opened, you can navigate
+pages using "<< Prev" and "Next >>" buttons.
+
+> [!NOTE]
+> There's no "jump to page number" functionality available yet; I plan to add
+> this in the future. Let me know if you need this feature sooner.
+
+Now, you will see the PDF rendered on your screen as follows (this is the LeNet
+paper):
+
+![PDF displayed in the PDF to SVG app](assets/app-with-lenet-opened.png)
+
+You can draw a rectangular selection on the screen by dragging your mouse to
+select the region of interest on the page. Once you let go of the mouse button,
+you should see something like this:
+
+![PDF displayed with a blue rectangular selection around the model and caption](assets/app-with-lenet-selected.png)
+
+Now, you can press the button "Save Region as SVG" in the upper-right of the
+app to export the selection to a file as SVG. Once saved, you should have a
+file that looks like the following:
+
+<img src="assets/lenet-extracted.svg" width="100%"
+     alt="The LeNet model extracted from PDF as an SVG">
+
+> [!NOTE]
+> Observe that the first two app images above are raster screenshots (PNGs); if
+> you zoom in on them, you will see pixelization.
+>
+> However, the 3rd image is an SVG, which will scale without any pixelization
+> arbitrarily.
+>
+> If you zoom in far enough, you will note that some of the lines don't quite
+> match up, but that's not an artifact of the PDF to SVG export process, some
+> of the lines in the original LeNet paper don't meet, you can see this in the
+> original PDF if you zoom in similarly.
+
 ## Installation
 
 * Install CLI tools for querying and managing PDFs
@@ -43,7 +92,7 @@ details.
   python -m pip install -r requirements.txt
   ```
 
-## Run the program
+## Running
 
 > [!IMPORTANT]
 > If you are using virtual environments, you need to use this method of running
