@@ -56,7 +56,7 @@ class PDFViewerLabel(QLabel):
     def mousePressEvent(self, event): # pylint: disable=invalid-name
         """Handle mouse click to start the selection."""
         if event.button() == Qt.LeftButton:
-            self.start_point = event.pos()
+            self.start_point = event.position().toPoint()
             self.selection_rect = QRect(self.start_point, QSize())
             self.is_selecting = True
             self.update()
@@ -64,7 +64,7 @@ class PDFViewerLabel(QLabel):
     def mouseMoveEvent(self, event): # pylint: disable=invalid-name
         """Handle mouse drag while selection is in progress."""
         if self.is_selecting:
-            self.end_point = event.pos()
+            self.end_point = event.position().toPoint()
             self.selection_rect = QRect(self.start_point, self.end_point).normalized()
             self.update() # Trigger a repaint
 
