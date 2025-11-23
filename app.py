@@ -334,8 +334,9 @@ class MainWindow(QMainWindow):
                 "-y", f'{int(y_pt)}', # Needs to be integer valued!
                 "-W", f'{int(w_pt)}', # Needs to be integer valued!
                 "-H", f'{int(h_pt)}', # Needs to be integer valued!
+                "-paperw", f'{int(w_pt)}', # Set paper width to crop width; needs to be int
+                "-paperh", f'{int(h_pt)}', # Set paper height to crop height; needs to be int
                 "-nocenter",
-                "-noshrink",
                 self.pdf_path,
                 output_path,
             ]
