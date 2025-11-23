@@ -153,28 +153,12 @@ class MainWindow(QMainWindow):
         self.btn_next.clicked.connect(self.next_page)
         self.btn_save.clicked.connect(self.save_svg)
 
-        self.check_poppler_tools()
-
     def display_error(self, message):
         """Helper to display error messages in the viewer."""
         self.viewer.clear()
         self.viewer.setText(message)
         self.viewer.setFont(QFont("Arial", 12))
         self.viewer.setStyleSheet("color: red;")
-
-    def check_poppler_tools(self):
-        """Check if Poppler command-line tools are accessible."""
-        try:
-            # Use --version to check for existence without processing a file
-            subprocess.run(["pdftocairo", "-v"], check=True, capture_output=True)
-            subprocess.run(["pdftoppm", "-v"], check=True, capture_output=True)
-            subprocess.run(["pdfinfo", "-v"], check=True, capture_output=True)
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            self.display_error(
-                "Error: Poppler tools not found.\n"
-                "Please install 'poppler-utils' and ensure it's in your PATH.")
-            for btn in [self.btn_open, self.btn_save, self.btn_prev, self.btn_next]:
-                btn.setEnabled(False)
 
     def open_pdf(self):
         """Tries to open a PDF and, if successful, renders the first page."""
@@ -389,8 +373,30 @@ class MainWindow(QMainWindow):
         super().closeEvent(event)
 
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
+def main(argv):
+    all_tools = ["pdftocairo", "pdftoppm", "pdfinfo"]
+    missing_tools = []
+
+    for tool in all_tools:
+        try:
+            # Use --version to check for existence without processing a file
+            subprocess.run([tool, "-v"], check=True, capture_output=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            missing_tools.append(tool)
+
+    if missing_tools:
+        print(f"Error: Poppler tools not found: {', '.join(missing_tools)}.\n"
+              "Please install 'poppler-utils' and ensure it's in your PATH.\n"
+              "More info: "
+              "https://github.com/mbrukman/pdf-extract-svg?tab=readme-ov-file#installation",
+              file=sys.stderr)
+        sys.exit(1)
+
+    app = QApplication(argv)
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main(sys.argv)
