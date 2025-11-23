@@ -45,16 +45,19 @@ details.
 
 ## Run the program
 
-Start the program via either:
+> [!IMPORTANT]
+> If you are using virtual environments, you need to use this method of running
+> the app.
+
+Start the program via:
 
 ```sh
-# Use the first `python` binary in your $PATH, necessary if you're using
-# virtual environments.
 python app.py
 ```
 
-or, if you've installed PySide6 globally and are not using virtual
-environments:
+> [!NOTE]
+> If you PySide6 globally and are not using virtual environments, you can just
+> run the script itself directly.
 
 ```sh
 # Implicitly uses /usr/bin/python
