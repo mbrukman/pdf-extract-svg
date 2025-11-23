@@ -13,6 +13,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Qt application to view PDFs and extract regions to SVG.
+
+Sample applications include extracting charts, graphs, model architectures,
+algorithms, equations, etc. from PDFs to share them via blog posts or social
+media such that they remain clear and scalable vector graphics, as opposed to
+pixelated raster images.
+
+Before using, please see these instructions to install necessary dependencies:
+https://github.com/mbrukman/pdf-extract-svg?tab=readme-ov-file#installation
+"""
 
 import os
 import re
@@ -44,6 +54,7 @@ class PDFViewerLabel(QLabel):
         self.is_selecting = False
 
     def mousePressEvent(self, event): # pylint: disable=invalid-name
+        """Handle mouse click to start the selection."""
         if event.button() == Qt.LeftButton:
             self.start_point = event.pos()
             self.selection_rect = QRect(self.start_point, QSize())
@@ -51,17 +62,20 @@ class PDFViewerLabel(QLabel):
             self.update()
 
     def mouseMoveEvent(self, event): # pylint: disable=invalid-name
+        """Handle mouse drag while selection is in progress."""
         if self.is_selecting:
             self.end_point = event.pos()
             self.selection_rect = QRect(self.start_point, self.end_point).normalized()
             self.update() # Trigger a repaint
 
     def mouseReleaseEvent(self, event): # pylint: disable=invalid-name
+        """Handle mouse button release while making a selection."""
         if event.button() == Qt.LeftButton and self.is_selecting:
             self.is_selecting = False
             self.update()
 
     def paintEvent(self, event): # pylint: disable=invalid-name
+        """Draw the selected region on top of the rendered PDF page."""
         super().paintEvent(event) # Draw the pixmap first
 
         # Draw the selection box if available (both during dragging and after).
@@ -76,7 +90,11 @@ class PDFViewerLabel(QLabel):
 
 
 class MainWindow(QMainWindow):
+    """Handles the UI of the application."""
+
     def __init__(self):
+        """Initialize the UI elements and connect them to handlers."""
+
         super().__init__()
         self.setWindowTitle("PDF Vector Extractor")
         self.setGeometry(100, 100, 1000, 800)
@@ -145,7 +163,7 @@ class MainWindow(QMainWindow):
         self.viewer.setStyleSheet("color: red;")
 
     def check_poppler_tools(self):
-        """Checks if Poppler command-line tools are accessible."""
+        """Check if Poppler command-line tools are accessible."""
         try:
             # Use --version to check for existence without processing a file
             subprocess.run(["pdftocairo", "-v"], check=True, capture_output=True)
@@ -159,6 +177,7 @@ class MainWindow(QMainWindow):
                 btn.setEnabled(False)
 
     def open_pdf(self):
+        """Tries to open a PDF and, if successful, renders the first page."""
         path, _ = QFileDialog.getOpenFileName(self, "Open PDF", "", "PDF Files (*.pdf)")
         if path:
             self.pdf_path = path
@@ -166,8 +185,8 @@ class MainWindow(QMainWindow):
             if self.get_pdf_info():
                 self.render_page()
 
-    def get_pdf_info(self):
-        """Gets total pages using pdfinfo and returns True on success."""
+    def get_pdf_info(self) -> bool:
+        """Gets total pages using pdfinfo and returns status."""
         try:
             command = [
                 "pdfinfo",
@@ -219,6 +238,7 @@ class MainWindow(QMainWindow):
             self.page_size_points = (0, 0)
 
     def render_page(self):
+        """Render a single page from a PDF to a file and display it."""
         if not self.pdf_path:
             return
 
@@ -274,16 +294,19 @@ class MainWindow(QMainWindow):
         self.btn_save.setEnabled(True)
 
     def prev_page(self):
+        """Move to the previous page in this file, if we're not at the beginning."""
         if self.current_page > 0:
             self.current_page -= 1
             self.render_page()
 
     def next_page(self):
+        """Move to the next page in this file, if we're not at the end."""
         if self.current_page < self.total_pages - 1:
             self.current_page += 1
             self.render_page()
 
     def save_svg(self):
+        """Write selected region to an SVG."""
         selection = self.viewer.selection_rect
         if selection.isNull() or selection.width() < 2 or selection.height() < 2:
             self.statusBar().showMessage("Please select a valid region first.", 3000)
