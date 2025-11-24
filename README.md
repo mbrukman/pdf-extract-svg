@@ -100,15 +100,13 @@ file that looks like the following:
 > If you are using virtual environments, you need to use this method of running
 > the app.
 
-Start the program via:
-
 ```sh
 python app.py
 ```
 
 > [!NOTE]
-> If you PySide6 globally and are not using virtual environments, you can just
-> run the script itself directly.
+> If you installed PySide6 globally and are not using virtual environments, you
+> can just run the script directly.
 
 ```sh
 # Implicitly uses /usr/bin/python
