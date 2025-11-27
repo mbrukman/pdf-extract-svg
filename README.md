@@ -31,13 +31,8 @@ details.
 
 When you open the app, you will see a blank screen. Click on "Open PDF" button
 in the upper left and select a PDF. Once the PDF is opened, you can navigate
-pages using "<< Prev" and "Next >>" buttons.
-
-> [!NOTE]
-> There's no "jump to page number" functionality available yet; I plan to add
-> this in the future. If you need this feature sooner, please vote with thumbs
-> up on [this issue](https://github.com/mbrukman/pdf-extract-svg/issues/21).
-> Thanks!
+pages using "<< Prev" and "Next >>" buttons, or type in a page number and press
+Enter to jump to it directly.
 
 Now, you will see the PDF rendered on your screen as follows (this is the LeNet
 paper):

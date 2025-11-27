@@ -31,7 +31,7 @@ import sys
 
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QFileDialog, QLabel, QWidget,
-    QVBoxLayout, QHBoxLayout, QPushButton, QScrollArea
+    QVBoxLayout, QHBoxLayout, QPushButton, QScrollArea, QLineEdit
 )
 from PySide6.QtGui import QPixmap, QPainter, QPen, QColor, QFont
 from PySide6.QtCore import Qt, QRect, QPoint, QSize
@@ -113,17 +113,24 @@ class MainWindow(QMainWindow):
         self.btn_open = QPushButton("Open PDF")
         self.btn_prev = QPushButton("<< Prev")
         self.btn_next = QPushButton("Next >>")
-        self.lbl_page = QLabel("Page: N/A")
+        self.lbl_page_prefix = QLabel("Page: ")
+        self.txt_page_num = QLineEdit()
+        self.txt_page_num.setFixedWidth(50)
+        self.txt_page_num.setAlignment(Qt.AlignCenter)
+        self.lbl_total_pages = QLabel(" / N/A")
         self.btn_save = QPushButton("Save Region as SVG")
 
         self.btn_prev.setEnabled(False)
         self.btn_next.setEnabled(False)
         self.btn_save.setEnabled(False)
+        self.txt_page_num.setEnabled(False)
 
         control_layout.addWidget(self.btn_open)
         control_layout.addStretch()
         control_layout.addWidget(self.btn_prev)
-        control_layout.addWidget(self.lbl_page)
+        control_layout.addWidget(self.lbl_page_prefix)
+        control_layout.addWidget(self.txt_page_num)
+        control_layout.addWidget(self.lbl_total_pages)
         control_layout.addWidget(self.btn_next)
         control_layout.addStretch()
         control_layout.addWidget(self.btn_save)
@@ -152,6 +159,7 @@ class MainWindow(QMainWindow):
         self.btn_prev.clicked.connect(self.prev_page)
         self.btn_next.clicked.connect(self.next_page)
         self.btn_save.clicked.connect(self.save_svg)
+        self.txt_page_num.returnPressed.connect(self.jump_to_page)
 
     def display_error(self, message):
         """Helper to display error messages in the viewer."""
@@ -272,10 +280,26 @@ class MainWindow(QMainWindow):
 
     def update_ui_state(self):
         """Enable/disable buttons based on current state."""
-        self.lbl_page.setText(f"Page: {self.current_page + 1} / {self.total_pages}")
+        self.txt_page_num.setText(str(self.current_page + 1))
+        self.lbl_total_pages.setText(f" / {self.total_pages}")
         self.btn_prev.setEnabled(self.current_page > 0)
         self.btn_next.setEnabled(self.current_page < self.total_pages - 1)
         self.btn_save.setEnabled(True)
+        self.txt_page_num.setEnabled(True)
+
+    def jump_to_page(self):
+        """Jump to the page specified in the text box."""
+        try:
+            page_num = int(self.txt_page_num.text())
+            if 1 <= page_num <= self.total_pages:
+                self.current_page = page_num - 1
+                self.render_page()
+            else:
+                # Reset to current page if out of range
+                self.txt_page_num.setText(str(self.current_page + 1))
+        except ValueError:
+            # Reset to current page if invalid input
+            self.txt_page_num.setText(str(self.current_page + 1))
 
     def prev_page(self):
         """Move to the previous page in this file, if we're not at the beginning."""
