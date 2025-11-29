@@ -2,6 +2,11 @@
 *.sw?
 *~
 
-# Python virtual environment and generated files
+# Python virtual environment
+.env
+env
 venv
+
+# Python generated files
 __pycache__
+*.pyc
