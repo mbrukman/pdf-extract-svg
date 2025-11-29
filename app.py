@@ -35,11 +35,12 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import (
     QPixmap, QPainter, QPen, QColor, QFont, QMouseEvent, QPaintEvent,
-    QCloseEvent,
+    QCloseEvent, QCursor,
 )
 from PySide6.QtCore import (
-    Qt, QRect, QPoint, QSize,
+    Qt, QRect, QPoint, QSize, QPointF,
 )
+
 
 # DPI for the preview image. Higher values are clearer but use more memory.
 PREVIEW_DPI = 150
@@ -56,26 +57,69 @@ class PDFViewerLabel(QLabel):
         self.start_point: QPoint = QPoint()
         self.end_point: QPoint = QPoint()
         self.is_selecting: bool = False
+        self.is_selection_moving: bool = False
+        self.drag_offset: QPoint = QPoint()
+
+    def __is_position_inside_selection(self, position: QPointF) -> bool:
+        """Check if the given position is inside the selection rectangle."""
+        return (not self.selection_rect.isNull() and
+                self.selection_rect.contains(position.toPoint(), proper=True))
 
     def mousePressEvent(self, event: QMouseEvent) -> None: # pylint: disable=invalid-name
-        """Handle mouse click to start the selection."""
+        """Handle mouse click to start the selection or move existing selection."""
         if event.button() == Qt.MouseButton.LeftButton:
-            self.start_point = event.position().toPoint()
-            self.selection_rect = QRect(self.start_point, QSize())
-            self.is_selecting = True
+            # Check if clicking inside existing selection to move it
+            if self.__is_position_inside_selection(event.position()):
+                self.is_selection_moving = True
+                self.drag_offset = event.position().toPoint() - self.selection_rect.topLeft()
+            else:
+                # Start new selection
+                self.start_point = event.position().toPoint()
+                self.selection_rect = QRect(self.start_point, QSize())
+                self.is_selecting = True
             self.update()
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None: # pylint: disable=invalid-name
-        """Handle mouse drag while selection is in progress."""
+        """Handle mouse drag while selection is in progress or being moved."""
+        # Update cursor based on position
+        # TODO(mbrukman): this is currently not working; the cursor shape does not update.
+        if self.__is_position_inside_selection(event.position()):
+            self.setCursor(QCursor(Qt.CursorShape.SizeAllCursor))
+        else:
+            self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
+        self.update()
+
         if self.is_selecting:
             self.end_point = event.position().toPoint()
             self.selection_rect = QRect(self.start_point, self.end_point).normalized()
             self.update() # Trigger a repaint
+        elif self.is_selection_moving:
+            new_top_left = event.position().toPoint() - self.drag_offset
+
+            # Constrain to widget bounds
+            rect_width = self.selection_rect.width()
+            rect_height = self.selection_rect.height()
+
+            # Ensure we don't move outside the image area
+            # The pixmap might be smaller than the widget if not resized, but usually it fits.
+            # We constrain to the widget's rect for simplicity, or the pixmap rect if available.
+            max_w = self.width()
+            max_h = self.height()
+            if self.pixmap():
+                max_w = self.pixmap().width()
+                max_h = self.pixmap().height()
+
+            x = max(0, min(new_top_left.x(), max_w - rect_width))
+            y = max(0, min(new_top_left.y(), max_h - rect_height))
+
+            self.selection_rect.moveTo(x, y)
+            self.update()
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None: # pylint: disable=invalid-name
         """Handle mouse button release while making a selection."""
-        if event.button() == Qt.MouseButton.LeftButton and self.is_selecting:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.is_selecting = False
+            self.is_selection_moving = False
             self.update()
 
     def paintEvent(self, event: QPaintEvent) -> None: # pylint: disable=invalid-name
@@ -140,14 +184,16 @@ class MainWindow(QMainWindow):
         control_layout.addWidget(self.btn_save)
 
         # Scrollable area for the PDF viewer
-        self.scroll_area: QScrollArea = QScrollArea()
+        self.scroll_area: QScrollArea = QScrollArea(parent=self)
         # Allow the widget to be larger than the viewport, enabling scrolling.
         self.scroll_area.setWidgetResizable(False)
         # A dark background makes the page stand out, using a stylesheet.
         self.scroll_area.setStyleSheet("background-color: #3c3c3c;")
+        self.scroll_area.setMouseTracking(True)
+        self.scroll_area.viewport().setMouseTracking(True)
 
         # Custom label for viewing and selection
-        self.viewer: PDFViewerLabel = PDFViewerLabel()
+        self.viewer: PDFViewerLabel = PDFViewerLabel(parent=self.scroll_area)
         self.viewer.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.scroll_area.setWidget(self.viewer)
 
