@@ -1,0 +1,1 @@
+PySide6-stubs ~= 6.7.3.0

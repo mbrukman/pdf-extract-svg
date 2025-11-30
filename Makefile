@@ -20,7 +20,7 @@ endif
 PYTHON_VERSION ?= $(shell python -c "import sys; print(f'{sys.version_info[0]}.{sys.version_info[1]}')")
 
 mypy-test:
-	$(VERB) python -m mypy --python-version=$(PYTHON_VERSION) --ignore-missing-imports `find . -name 'third_party' -prune -o -name '*.py' -print`
+	$(VERB) python -m mypy --python-version=$(PYTHON_VERSION) --check-untyped-defs --ignore-missing-imports `find . -name 'third_party' -prune -o -name '*.py' -print`
 
 pytype-test:
 	$(VERB) python -m pytype --python-version=$(PYTHON_VERSION) -k `find . -name 'third_party' -prune -o -name '*.py' -print`

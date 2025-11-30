@@ -31,11 +31,15 @@ import sys
 
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QFileDialog, QLabel, QWidget,
-    QVBoxLayout, QHBoxLayout, QPushButton, QScrollArea, QLineEdit
+    QVBoxLayout, QHBoxLayout, QPushButton, QScrollArea, QLineEdit,
 )
-from PySide6.QtGui import QPixmap, QPainter, QPen, QColor, QFont
-from PySide6.QtCore import Qt, QRect, QPoint, QSize
-
+from PySide6.QtGui import (
+    QPixmap, QPainter, QPen, QColor, QFont, QMouseEvent, QPaintEvent,
+    QCloseEvent,
+)
+from PySide6.QtCore import (
+    Qt, QRect, QPoint, QSize,
+)
 
 # DPI for the preview image. Higher values are clearer but use more memory.
 PREVIEW_DPI = 150
@@ -48,40 +52,40 @@ class PDFViewerLabel(QLabel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setMouseTracking(True)
-        self.selection_rect = QRect()
-        self.start_point = QPoint()
-        self.end_point = QPoint()
-        self.is_selecting = False
+        self.selection_rect: QRect = QRect()
+        self.start_point: QPoint = QPoint()
+        self.end_point: QPoint = QPoint()
+        self.is_selecting: bool = False
 
-    def mousePressEvent(self, event): # pylint: disable=invalid-name
+    def mousePressEvent(self, event: QMouseEvent) -> None: # pylint: disable=invalid-name
         """Handle mouse click to start the selection."""
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.start_point = event.position().toPoint()
             self.selection_rect = QRect(self.start_point, QSize())
             self.is_selecting = True
             self.update()
 
-    def mouseMoveEvent(self, event): # pylint: disable=invalid-name
+    def mouseMoveEvent(self, event: QMouseEvent) -> None: # pylint: disable=invalid-name
         """Handle mouse drag while selection is in progress."""
         if self.is_selecting:
             self.end_point = event.position().toPoint()
             self.selection_rect = QRect(self.start_point, self.end_point).normalized()
             self.update() # Trigger a repaint
 
-    def mouseReleaseEvent(self, event): # pylint: disable=invalid-name
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None: # pylint: disable=invalid-name
         """Handle mouse button release while making a selection."""
-        if event.button() == Qt.LeftButton and self.is_selecting:
+        if event.button() == Qt.MouseButton.LeftButton and self.is_selecting:
             self.is_selecting = False
             self.update()
 
-    def paintEvent(self, event): # pylint: disable=invalid-name
+    def paintEvent(self, event: QPaintEvent) -> None: # pylint: disable=invalid-name
         """Draw the selected region on top of the rendered PDF page."""
         super().paintEvent(event) # Draw the pixmap first
 
         # Draw the selection box if available (both during dragging and after).
         if not self.selection_rect.isNull():
             painter = QPainter(self)
-            pen = QPen(QColor(0, 120, 215, 200), 2, Qt.SolidLine)
+            pen = QPen(QColor(0, 120, 215, 200), 2, Qt.PenStyle.SolidLine)
             painter.setPen(pen)
 
             fill_color = QColor(0, 120, 215, 50)
@@ -100,25 +104,25 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 100, 1000, 800)
 
         # Member variables
-        self.pdf_path = None
-        self.temp_image_base = "pdf_extractor_temp_page"
-        self.current_page = 0
-        self.total_pages = 0
-        self.page_size_points = (0, 0) # Store page size in points (w, h)
+        self.pdf_path: str = ''
+        self.temp_image_base: str = "pdf_extractor_temp_page"
+        self.current_page: int = 0
+        self.total_pages: int = 0
+        self.page_size_points: tuple[float, float] = (0, 0) # Store page size in points (w, h)
 
         # --- UI Setup ---
-        main_layout = QVBoxLayout()
-        control_layout = QHBoxLayout()
+        main_layout: QVBoxLayout = QVBoxLayout()
+        control_layout: QHBoxLayout = QHBoxLayout()
 
-        self.btn_open = QPushButton("Open PDF")
-        self.btn_prev = QPushButton("<< Prev")
-        self.btn_next = QPushButton("Next >>")
-        self.lbl_page_prefix = QLabel("Page: ")
-        self.txt_page_num = QLineEdit()
+        self.btn_open: QPushButton = QPushButton("Open PDF")
+        self.btn_prev: QPushButton = QPushButton("<< Prev")
+        self.btn_next: QPushButton = QPushButton("Next >>")
+        self.lbl_page_prefix: QLabel = QLabel("Page: ")
+        self.txt_page_num: QLineEdit = QLineEdit()
         self.txt_page_num.setFixedWidth(50)
-        self.txt_page_num.setAlignment(Qt.AlignCenter)
-        self.lbl_total_pages = QLabel(" / N/A")
-        self.btn_save = QPushButton("Save Region as SVG")
+        self.txt_page_num.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.lbl_total_pages: QLabel = QLabel(" / N/A")
+        self.btn_save: QPushButton = QPushButton("Save Region as SVG")
 
         self.btn_prev.setEnabled(False)
         self.btn_next.setEnabled(False)
@@ -136,21 +140,21 @@ class MainWindow(QMainWindow):
         control_layout.addWidget(self.btn_save)
 
         # Scrollable area for the PDF viewer
-        self.scroll_area = QScrollArea()
+        self.scroll_area: QScrollArea = QScrollArea()
         # Allow the widget to be larger than the viewport, enabling scrolling.
         self.scroll_area.setWidgetResizable(False)
         # A dark background makes the page stand out, using a stylesheet.
         self.scroll_area.setStyleSheet("background-color: #3c3c3c;")
 
         # Custom label for viewing and selection
-        self.viewer = PDFViewerLabel()
-        self.viewer.setAlignment(Qt.AlignCenter)
+        self.viewer: PDFViewerLabel = PDFViewerLabel()
+        self.viewer.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.scroll_area.setWidget(self.viewer)
 
         main_layout.addLayout(control_layout)
         main_layout.addWidget(self.scroll_area)
 
-        container = QWidget()
+        container: QWidget = QWidget()
         container.setLayout(main_layout)
         self.setCentralWidget(container)
 
@@ -161,14 +165,14 @@ class MainWindow(QMainWindow):
         self.btn_save.clicked.connect(self.save_svg)
         self.txt_page_num.returnPressed.connect(self.jump_to_page)
 
-    def display_error(self, message):
+    def display_error(self, message: str) -> None:
         """Helper to display error messages in the viewer."""
         self.viewer.clear()
         self.viewer.setText(message)
         self.viewer.setFont(QFont("Arial", 12))
         self.viewer.setStyleSheet("color: red;")
 
-    def open_pdf(self):
+    def open_pdf(self) -> None:
         """Tries to open a PDF and, if successful, renders the first page."""
         path, _ = QFileDialog.getOpenFileName(self, "Open PDF", "", "PDF Files (*.pdf)")
         if path:
@@ -180,7 +184,7 @@ class MainWindow(QMainWindow):
     def get_pdf_info(self) -> bool:
         """Gets total pages using pdfinfo and returns status."""
         try:
-            command = [
+            command: list[str] = [
                 "pdfinfo",
                 self.pdf_path,
             ]
@@ -201,10 +205,10 @@ class MainWindow(QMainWindow):
                                f"Poppler Error:\n{e.stderr}")
             return False
 
-    def update_page_size(self):
+    def update_page_size(self) -> None:
         """Updates the size in points for the current page."""
         try:
-            command = [
+            command: list[str] = [
                 "pdfinfo",
                 "-f", str(self.current_page + 1),
                 "-l", str(self.current_page + 1),
@@ -229,7 +233,7 @@ class MainWindow(QMainWindow):
             print(f"Could not get page size for page {self.current_page + 1}: {e}", file=sys.stderr)
             self.page_size_points = (0, 0)
 
-    def render_page(self):
+    def render_page(self) -> None:
         """Render a single page from a PDF to a file and display it."""
         if not self.pdf_path:
             return
@@ -242,7 +246,7 @@ class MainWindow(QMainWindow):
 
         try:
             # Use pdftoppm to render the current page to a PNG
-            command = [
+            command: list[str] = [
                 "pdftoppm",
                 "-f", str(self.current_page + 1),
                 "-l", str(self.current_page + 1),
@@ -255,7 +259,8 @@ class MainWindow(QMainWindow):
             result = subprocess.run(command, check=True, capture_output=True)
 
             if result.stderr:
-                print(f"pdftoppm warnings:\n{result.stderr}", file=sys.stderr)
+                print("pdftoppm warnings:\n"
+                      f"{result.stderr.decode('utf-8', 'ignore')}", file=sys.stderr)
 
             generated_file = temp_image_path + ".png"
             if os.path.exists(generated_file):
@@ -277,8 +282,7 @@ class MainWindow(QMainWindow):
             # Clean up the generated PNG immediately after loading it
             self.cleanup_temp_files()
 
-
-    def update_ui_state(self):
+    def update_ui_state(self) -> None:
         """Enable/disable buttons based on current state."""
         self.txt_page_num.setText(str(self.current_page + 1))
         self.lbl_total_pages.setText(f" / {self.total_pages}")
@@ -287,7 +291,7 @@ class MainWindow(QMainWindow):
         self.btn_save.setEnabled(True)
         self.txt_page_num.setEnabled(True)
 
-    def jump_to_page(self):
+    def jump_to_page(self) -> None:
         """Jump to the page specified in the text box."""
         try:
             page_num = int(self.txt_page_num.text())
@@ -301,19 +305,19 @@ class MainWindow(QMainWindow):
             # Reset to current page if invalid input
             self.txt_page_num.setText(str(self.current_page + 1))
 
-    def prev_page(self):
+    def prev_page(self) -> None:
         """Move to the previous page in this file, if we're not at the beginning."""
         if self.current_page > 0:
             self.current_page -= 1
             self.render_page()
 
-    def next_page(self):
+    def next_page(self) -> None:
         """Move to the next page in this file, if we're not at the end."""
         if self.current_page < self.total_pages - 1:
             self.current_page += 1
             self.render_page()
 
-    def save_svg(self):
+    def save_svg(self) -> None:
         """Write selected region to an SVG."""
         selection = self.viewer.selection_rect
         if selection.isNull() or selection.width() < 2 or selection.height() < 2:
@@ -349,7 +353,7 @@ class MainWindow(QMainWindow):
 
         # --- Run pdftocairo to extract the SVG ---
         try:
-            command = [
+            command: list[str] = [
                 "pdftocairo",
                 "-svg",
                 "-f", str(self.current_page + 1),
@@ -383,7 +387,7 @@ class MainWindow(QMainWindow):
         except FileNotFoundError:
             self.statusBar().showMessage("Error: 'pdftocairo' command not found.", 5000)
 
-    def cleanup_temp_files(self):
+    def cleanup_temp_files(self) -> None:
         """Clean up any temporary image files."""
         for f in os.listdir('.'):
             if f.startswith(self.temp_image_base) and f.endswith(".png"):
@@ -392,7 +396,7 @@ class MainWindow(QMainWindow):
                 except OSError as e:
                     print(f"Error removing temp file {f}: {e}", file=sys.stderr)
 
-    def closeEvent(self, event): # pylint: disable=invalid-name
+    def closeEvent(self, event: QCloseEvent) -> None: # pylint: disable=invalid-name
         """Clean up temporary files on exit."""
         self.cleanup_temp_files()
         super().closeEvent(event)
