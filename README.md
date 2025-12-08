@@ -75,11 +75,22 @@ file that looks like the following:
 
   The script uses `pdftocairo`, `pdftoppm`, and `pdfinfo`.
 
-  * Debian, Ubuntu, etc.: `sudo apt install poppler-utils`
-  * RedHat, Fedora, CentOS, etc.: `sudo dnf install poppler-utils`
-  * Other Linux distributions: see [Repology](https://repology.org/project/poppler/versions)
-  * macOS: install [Homebrew](https://brew.sh) and `brew install poppler`
-  * Other: install [Poppler](https://poppler.freedesktop.org) from source
+  Below are commands for various operating systems and distributions with their
+  status of testing; if you validate one of the options that's listed as
+  untested and it works, please let us know! If you find issues or solutions for
+  an environment below, pelase file an issue and let us know as well. Thank you!
+
+  | Operating System             | Commands to install                              | Tested? |
+  |------------------------------|--------------------------------------------------|---------|
+  | Debian, Ubuntu, etc.         | `sudo apt install poppler-utils`                 | ✅      |
+  | RedHat, Fedora, CentOS, etc. | `sudo dnf install poppler-utils`                 | ❌      |
+  | Other Linux distributions    | see [Repology][repology]                         | ❌      |
+  | macOS                        | install [Homebrew][brew]; `brew install poppler` | ❌      |
+  | Other                        | install [Poppler][poppler] from source           | ❌      |
+
+[brew]: https://brew.sh
+[poppler]: https://poppler.freedesktop.org
+[repology]: https://repology.org/project/poppler/versions
 
 * Create a Python virtual environment and install necessary Python packages
 
