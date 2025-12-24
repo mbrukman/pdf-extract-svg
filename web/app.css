@@ -1,0 +1,84 @@
+/*
+ * Copyright 2025 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+body {
+  font-family: sans-serif;
+  background: #f0f0f0;
+  padding: 20px;
+}
+
+.controls {
+  margin-bottom: 15px;
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* The container for the PDF canvas and the selection overlay */
+#pdf-container {
+  position: relative;
+  /* Shrink to fit canvas */
+  display: inline-block;
+  border: 1px solid #ccc;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  /* Dark background for PDF contrast */
+  background: #888;
+  cursor: crosshair;
+}
+
+canvas {
+  display: block;
+}
+
+/* The selection rectangle */
+#selection-box {
+  position: absolute;
+  border: 2px dashed #ff0000;
+  background-color: rgba(255, 0, 0, 0.1);
+  display: none;
+  /* Let clicks pass through to container */
+  pointer-events: none;
+}
+
+button {
+  padding: 8px 16px;
+  cursor: pointer;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+button:hover:not(:disabled) {
+  background: #0056b3;
+}
+
+.status {
+  margin-left: auto;
+  font-size: 0.9em;
+  color: #666;
+}
