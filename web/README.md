@@ -32,7 +32,7 @@ See below for known issues and potential next steps.
 
 ## Access the hosted app
 
-To access the hosted app, **visit https://mbrukman.github.io/web/app.html** .
+To access the hosted app, **visit https://mbrukman.github.io/pdf-extract-svg/web/app.html** .
 
 Once it's open:
 
