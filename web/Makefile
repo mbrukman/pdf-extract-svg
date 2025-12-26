@@ -23,5 +23,5 @@ PORT = 8080
 # machine that is running the server. If you want to access the server from
 # another machine, remove the `--bind 127.0.0.1` flag from the command below.
 run:
-	$(VERB) echo "Listening on http://localhost:$(PORT) ..."
+	$(VERB) echo "Starting app on: http://localhost:$(PORT)/app.html ..."
 	$(VERB) python -m http.server $(PORT) --bind 127.0.0.1
