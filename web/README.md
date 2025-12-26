@@ -45,7 +45,7 @@ Once it's open:
 
 3. Make a rectangular selection by dragging the mouse
 
-4. Click on the button "Downlaod Selection as SVG"
+4. Click on the button "Download Selection as SVG"
 
 5. Open the resulting downloaded SVG to observe how well it mathes your
    selection
@@ -90,7 +90,7 @@ To run it locally, e.g., for development:
    will run on the default port specified in the [`Makefile`](Makefile).
    to change the port, run it as follows:
 
-4. Open the printed URL in your browser, e.g., http://localhost:9000/
+4. Open the printed URL in your browser, e.g., http://localhost:9000/app.html
 
    **Note:** by default, the web server only supports connections from localhost
    for security; if you're developing on another machine on your network, you
@@ -107,7 +107,7 @@ To run it locally, e.g., for development:
 
 7. Make a rectangular selection by dragging the mouse
 
-8. Click on the button "Downlaod Selection as SVG"
+8. Click on the button "Download Selection as SVG"
 
 9. Open the resulting downloaded SVG to observe how well it mathes your
    selection
