@@ -88,7 +88,6 @@ To run it locally, e.g., for development:
 
    This will start a web server on localhost with the given port; omitting it
    will run on the default port specified in the [`Makefile`](Makefile).
-   to change the port, run it as follows:
 
 4. Open the printed URL in your browser, e.g., http://localhost:9000/app.html
 
