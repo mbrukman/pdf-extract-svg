@@ -58,7 +58,57 @@ class PDFViewerLabel(QLabel):
         self.end_point: QPoint = QPoint()
         self.is_selecting: bool = False
         self.is_selection_moving: bool = False
+        self.is_selection_resizing: bool = False
+        self.resize_edges: set[str] = set()
+        self.resize_start_point: QPoint = QPoint()
+        self.resize_start_rect: QRect = QRect()
         self.drag_offset: QPoint = QPoint()
+
+    def __get_resize_edges(self, position: QPointF) -> set[str]:
+        """Return the selection edges nearest to the pointer, if any."""
+        if self.selection_rect.isNull():
+            return set()
+
+        point = position.toPoint()
+        rect = self.selection_rect
+        handle_size = 8
+        if not rect.adjusted(-handle_size, -handle_size,
+                             handle_size, handle_size).contains(point):
+            return set()
+
+        near_left = abs(point.x() - rect.left()) <= handle_size
+        near_right = abs(point.x() - rect.right()) <= handle_size
+        near_top = abs(point.y() - rect.top()) <= handle_size
+        near_bottom = abs(point.y() - rect.bottom()) <= handle_size
+
+        # Only allow edge resizing when the pointer is near that edge span.
+        edges: set[str] = set()
+        if near_left:
+            edges.add("left")
+        elif near_right:
+            edges.add("right")
+        if near_top:
+            edges.add("top")
+        elif near_bottom:
+            edges.add("bottom")
+        return edges
+
+    def __update_cursor(self, position: QPointF) -> None:
+        """Show the appropriate cursor over resize handles or the selection."""
+        edges = self.__get_resize_edges(position)
+        if edges in ({"left", "top"}, {"right", "bottom"}):
+            shape = Qt.CursorShape.SizeFDiagCursor
+        elif edges in ({"right", "top"}, {"left", "bottom"}):
+            shape = Qt.CursorShape.SizeBDiagCursor
+        elif edges in ({"left"}, {"right"}):
+            shape = Qt.CursorShape.SizeHorCursor
+        elif edges in ({"top"}, {"bottom"}):
+            shape = Qt.CursorShape.SizeVerCursor
+        elif self.__is_position_inside_selection(position):
+            shape = Qt.CursorShape.SizeAllCursor
+        else:
+            shape = Qt.CursorShape.ArrowCursor
+        self.setCursor(QCursor(shape))
 
     def __is_position_inside_selection(self, position: QPointF) -> bool:
         """Check if the given position is inside the selection rectangle."""
@@ -68,8 +118,13 @@ class PDFViewerLabel(QLabel):
     def mousePressEvent(self, event: QMouseEvent) -> None: # pylint: disable=invalid-name
         """Handle mouse click to start the selection or move existing selection."""
         if event.button() == Qt.MouseButton.LeftButton:
+            self.resize_edges = self.__get_resize_edges(event.position())
+            if self.resize_edges:
+                self.is_selection_resizing = True
+                self.resize_start_point = event.position().toPoint()
+                self.resize_start_rect = QRect(self.selection_rect)
             # Check if clicking inside existing selection to move it
-            if self.__is_position_inside_selection(event.position()):
+            elif self.__is_position_inside_selection(event.position()):
                 self.is_selection_moving = True
                 self.drag_offset = event.position().toPoint() - self.selection_rect.topLeft()
             else:
@@ -81,13 +136,8 @@ class PDFViewerLabel(QLabel):
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None: # pylint: disable=invalid-name
         """Handle mouse drag while selection is in progress or being moved."""
-        # Update cursor based on position
-        # TODO(mbrukman): this is currently not working; the cursor shape does not update.
-        if self.__is_position_inside_selection(event.position()):
-            self.setCursor(QCursor(Qt.CursorShape.SizeAllCursor))
-        else:
-            self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
-        self.update()
+        if not self.is_selecting and not self.is_selection_moving and not self.is_selection_resizing:
+            self.__update_cursor(event.position())
 
         if self.is_selecting:
             self.end_point = event.position().toPoint()
@@ -114,12 +164,40 @@ class PDFViewerLabel(QLabel):
 
             self.selection_rect.moveTo(x, y)
             self.update()
+        elif self.is_selection_resizing:
+            delta = event.position().toPoint() - self.resize_start_point
+            rect = QRect(self.resize_start_rect)
+            left, right = rect.left(), rect.right()
+            top, bottom = rect.top(), rect.bottom()
+
+            if "left" in self.resize_edges:
+                left = min(left + delta.x(), right - 1)
+            elif "right" in self.resize_edges:
+                right = max(right + delta.x(), left + 1)
+            if "top" in self.resize_edges:
+                top = min(top + delta.y(), bottom - 1)
+            elif "bottom" in self.resize_edges:
+                bottom = max(bottom + delta.y(), top + 1)
+
+            # Keep the resized rectangle within the displayed PDF image.
+            max_w = self.pixmap().width() if self.pixmap() else self.width()
+            max_h = self.pixmap().height() if self.pixmap() else self.height()
+            left = max(0, left)
+            top = max(0, top)
+            right = min(max_w - 1, right)
+            bottom = min(max_h - 1, bottom)
+            if right > left and bottom > top:
+                self.selection_rect = QRect(QPoint(left, top), QPoint(right, bottom))
+                self.update()
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None: # pylint: disable=invalid-name
         """Handle mouse button release while making a selection."""
         if event.button() == Qt.MouseButton.LeftButton:
             self.is_selecting = False
             self.is_selection_moving = False
+            self.is_selection_resizing = False
+            self.resize_edges.clear()
+            self.__update_cursor(event.position())
             self.update()
 
     def paintEvent(self, event: QPaintEvent) -> None: # pylint: disable=invalid-name
@@ -135,6 +213,18 @@ class PDFViewerLabel(QLabel):
             fill_color = QColor(0, 120, 215, 50)
             painter.fillRect(self.selection_rect, fill_color)
             painter.drawRect(self.selection_rect)
+
+            # Small corner and edge handles make the resize affordance visible.
+            handle_color = QColor(0, 120, 215, 230)
+            painter.setBrush(handle_color)
+            painter.setPen(QPen(Qt.GlobalColor.white, 1))
+            handle_size = 8
+            half = handle_size // 2
+            for x in (self.selection_rect.left(), self.selection_rect.center().x(),
+                      self.selection_rect.right()):
+                for y in (self.selection_rect.top(), self.selection_rect.center().y(),
+                          self.selection_rect.bottom()):
+                    painter.drawRect(x - half, y - half, handle_size, handle_size)
 
 
 class MainWindow(QMainWindow):
