@@ -19,6 +19,9 @@ endif
 
 PYTHON_VERSION ?= $(shell python -c "import sys; print(f'{sys.version_info[0]}.{sys.version_info[1]}')")
 
+test:
+	$(VERB) python -m unittest discover -p '*_test.py' -s tests -v
+
 mypy-test:
 	$(VERB) python -m mypy --python-version=$(PYTHON_VERSION) --check-untyped-defs --ignore-missing-imports `find . -name 'third_party' -prune -o -name '*.py' -print`
 
