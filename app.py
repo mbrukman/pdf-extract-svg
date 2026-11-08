@@ -141,7 +141,15 @@ class PDFViewerLabel(QLabel):
 
         if self.is_selecting:
             self.end_point = event.position().toPoint()
-            self.selection_rect = QRect(self.start_point, self.end_point).normalized()
+            top_left = QPoint(
+                min(self.start_point.x(), self.end_point.x()),
+                min(self.start_point.y(), self.end_point.y()),
+            )
+            bottom_right = QPoint(
+                max(self.start_point.x(), self.end_point.x()),
+                max(self.start_point.y(), self.end_point.y()),
+            )
+            self.selection_rect = QRect(top_left, bottom_right)
             self.update() # Trigger a repaint
         elif self.is_selection_moving:
             new_top_left = event.position().toPoint() - self.drag_offset
