@@ -15,10 +15,13 @@
 
 import os
 import unittest
+from typing import ClassVar
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import QEvent, QPoint, QPointF, QRect, Qt  # noqa: E402
+from PySide6.QtCore import (  # noqa: E402
+    QCoreApplication, QEvent, QPoint, QPointF, QRect, Qt,
+)
 from PySide6.QtGui import QMouseEvent, QPixmap  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
@@ -27,6 +30,8 @@ from app import PDFViewerLabel  # noqa: E402
 
 class SelectionResizeTest(unittest.TestCase):
     """Exercise selection resizing through the viewer's mouse handlers."""
+
+    application: ClassVar[QCoreApplication]
 
     @classmethod
     def setUpClass(cls):
